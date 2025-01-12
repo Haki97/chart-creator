@@ -1,20 +1,17 @@
-/* Basic reset and styling */
 body {
   font-family: Arial, sans-serif;
   margin: 0;
   padding: 0;
-  background-color: #f8f8f8;
+  background-color: #f9f9f9;
 }
 
-/* Header, Footer */
 header, footer {
-  background-color: #ffffff;
-  border-bottom: 1px solid #ccc;
+  background-color: #fff;
   padding: 1rem;
   text-align: center;
+  border-bottom: 1px solid #ccc;
 }
 
-/* Main layout */
 main {
   display: flex;
   flex-wrap: wrap;
@@ -29,46 +26,46 @@ section {
   border-radius: 4px;
   box-shadow: 0 0 5px rgba(0,0,0,0.1);
   flex: 1 1 400px;
-  max-width: 500px;
+  max-width: 600px;
   padding: 1rem;
-}
-
-/* Data input section */
-#data-input {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
 }
 
 #data-input textarea {
   width: 100%;
-  height: 100px;
-  font-family: monospace;
+  height: 80px;
+}
+
+.config-row {
+  margin: 0.5rem 0;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+table, th, td {
+  border: 1px solid #ccc;
+}
+
+th, td {
   padding: 0.5rem;
-  resize: vertical;
+  text-align: left;
 }
 
-/* Chart section */
-#chart-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
+canvas {
+  max-width: 500px;
+  max-height: 300px;
 }
 
-#myChart {
-  max-width: 400px;
-  max-height: 400px;
-}
-
-/* Buttons */
 button {
-  padding: 0.6rem 1rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem 1rem;
   cursor: pointer;
+  background-color: #eee;
   border: none;
   border-radius: 4px;
-  background-color: #eee;
-  transition: background-color 0.2s ease-in-out;
 }
 
 button:hover {

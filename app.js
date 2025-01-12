@@ -1,187 +1,261 @@
-// DOM Elements
+// DOM references
 const fileInput = document.getElementById('fileInput');
 const manualDataTextarea = document.getElementById('manualData');
-const renderChartBtn = document.getElementById('renderChartBtn');
-const downloadChartBtn = document.getElementById('downloadChartBtn');
+const parseDataBtn = document.getElementById('parseDataBtn');
 const hasHeaderCheckbox = document.getElementById('hasHeader');
 
-let myChart; // Reference to the Chart.js instance
+// Table preview
+const tablePreview = document.getElementById('tablePreview');
+
+// Chart config
+const xColumnSelect = document.getElementById('xColumnSelect');
+const yColumnsSelect = document.getElementById('yColumnsSelect');
+const chartTypeSelect = document.getElementById('chartType');
+
+// Generate Chart button
+const generateChartBtn = document.getElementById('generateChartBtn');
+const downloadChartBtn = document.getElementById('downloadChartBtn');
+
+let parsedRows = []; // con header -> array di oggetti, senza header -> array di array
+let fields = [];     // intestazioni (se header=true) o colN (se header=false)
+let myChart = null;  // chart instance
 
 /****************************************************************************
- * 1. Handle File Upload
+ * STEP 1: Parse data from CSV / JSON
  ****************************************************************************/
-fileInput.addEventListener('change', handleFileUpload);
+parseDataBtn.addEventListener('click', () => {
+  const textData = manualDataTextarea.value.trim();
 
-function handleFileUpload(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    const fileContent = e.target.result;
-
-    // If the file is .json, parse as JSON directly
-    if (file.name.toLowerCase().endsWith('.json')) {
-      try {
-        const parsedData = JSON.parse(fileContent);
-        // Pretty-print JSON in the textarea
-        manualDataTextarea.value = JSON.stringify(parsedData, null, 2);
-      } catch (err) {
-        alert('Error parsing JSON file. Check the console for details.');
-        console.error(err);
-      }
-    } else {
-      // It's presumably CSV. Just show it as text in the textarea
-      manualDataTextarea.value = fileContent;
-    }
-  };
-  reader.readAsText(file);
-}
-
-/****************************************************************************
- * 2. Render Chart
- ****************************************************************************/
-renderChartBtn.addEventListener('click', () => {
-  const inputData = manualDataTextarea.value.trim();
-
-  // We'll attempt JSON first. If it fails, we'll handle CSV using PapaParse
-  if (isJson(inputData)) {
-    // Parse JSON
-    try {
-      const jsonData = JSON.parse(inputData);
-      parseJsonData(jsonData);
-    } catch (err) {
-      alert('Error: Invalid JSON format.');
-      console.error(err);
-    }
+  // Se il file input è stato usato
+  if (fileInput.files && fileInput.files.length > 0) {
+    // Leggiamo dal file selezionato
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const content = e.target.result;
+      handleParsing(content, file.name);
+    };
+    reader.readAsText(file);
   } else {
-    // Parse CSV via PapaParse
-    parseCsvData(inputData);
+    // Altrimenti, parse i dati incollati in textarea
+    if (textData) {
+      // Non abbiamo un "nome file", ma possiamo passare un generico
+      handleParsing(textData, 'manualInput.csv');
+    } else {
+      alert('Nessun dato fornito!');
+    }
   }
 });
 
-/**
- * Check if the input starts with '[' or '{' to guess JSON
- */
+function handleParsing(content, fileName) {
+  // Proviamo a capire se è JSON o CSV
+  if (fileName.toLowerCase().endsWith('.json') || isJson(content)) {
+    try {
+      const jsonData = JSON.parse(content);
+      // Devi convertire jsonData in una forma unificata -> array di oggetti
+      // Se jsonData è già un array di oggetti, siamo a posto
+      if (!Array.isArray(jsonData)) {
+        alert('JSON non è un array!');
+        return;
+      }
+      // Se ha una forma del tipo: [ {A: val, B: val, ...}, {...} ]
+      parsedRows = jsonData;
+      // fields -> estrai le chiavi unendo tutto
+      fields = getFieldsFromJson(parsedRows);
+      // Render tabella
+      renderTable(parsedRows, fields);
+      // Popola select
+      populateColumnSelectors(fields);
+    } catch (err) {
+      alert('Errore nel parsing del JSON');
+      console.error(err);
+    }
+  } else {
+    // Presumiamo che sia CSV
+    parseCsvData(content);
+  }
+}
+
 function isJson(str) {
   return str.startsWith('{') || str.startsWith('[');
 }
 
 /****************************************************************************
- * 2.1 Parse JSON
- ****************************************************************************/
-function parseJsonData(jsonData) {
-  // We expect an array of objects like:
-  // [
-  //   { "label": "A", "value": 10 },
-  //   { "label": "B", "value": 20 }
-  // ]
-
-  if (!Array.isArray(jsonData)) {
-    alert('Error: JSON is not an array. Expected an array of objects.');
-    return;
-  }
-
-  // Extract labels and data
-  const labels = [];
-  const dataPoints = [];
-
-  jsonData.forEach(item => {
-    // Adjust these keys if your JSON structure is different
-    if (item.label === undefined || item.value === undefined) {
-      console.warn('Missing "label" or "value" in JSON object:', item);
-      return;
-    }
-    labels.push(item.label);
-    dataPoints.push(parseFloat(item.value));
-  });
-
-  if (labels.length === 0) {
-    alert('No valid data found in JSON array. Check console.');
-    return;
-  }
-
-  createOrUpdateChart(labels, dataPoints);
-}
-
-/****************************************************************************
- * 2.2 Parse CSV using PapaParse
+ * CSV Parsing
  ****************************************************************************/
 function parseCsvData(csvString) {
-  // If "CSV has header row" is checked, we parse with header=true
   const hasHeader = hasHeaderCheckbox.checked;
-
-  const parseResult = Papa.parse(csvString, {
+  const result = Papa.parse(csvString, {
     header: hasHeader,
     skipEmptyLines: true,
-    // Adjust delimiter if your CSV uses semicolons or tabs
-    delimiter: ','
+    delimiter: ',' // cambiare se serve ;
   });
 
-  if (parseResult.errors && parseResult.errors.length > 0) {
-    console.error('PapaParse errors:', parseResult.errors);
-    alert('Error parsing CSV. Check console for more details.');
+  if (result.errors && result.errors.length > 0) {
+    console.error(result.errors);
+    alert('Errore nel parsing CSV (vedi console)');
     return;
   }
-
-  const parsedRows = parseResult.data; // This is an array of either arrays or objects
-  let labels = [];
-  let dataPoints = [];
 
   if (hasHeader) {
-    // Example: Each row is an object { label: "A", value: "10" }
-    for (let row of parsedRows) {
-      // Adjust these keys if your CSV header is different
-      if (!row.label || !row.value) {
-        console.warn('Skipping invalid row:', row);
-        continue;
-      }
-      labels.push(row.label);
-      dataPoints.push(parseFloat(row.value));
-    }
+    // array di oggetti
+    parsedRows = result.data; // es. [ {A: val, B: val, ...}, {...} ]
+    fields = result.meta.fields; // es. ["A","B","C","D"]
   } else {
-    // Example: Each row is an array [ "A", "10" ]
-    for (let row of parsedRows) {
-      if (row.length < 2) {
-        console.warn('Skipping invalid row:', row);
-        continue;
-      }
-      labels.push(row[0]);
-      dataPoints.push(parseFloat(row[1]));
+    // array di array
+    parsedRows = result.data; // es. [ ["A","B","C"], ["valA","valB","valC"] ]
+    // Genera intestazioni fittizie: col1, col2, ...
+    const colCount = parsedRows[0].length;
+    fields = [];
+    for (let i = 0; i < colCount; i++) {
+      fields.push(`Col${i+1}`);
     }
   }
 
-  if (labels.length === 0 || dataPoints.length === 0) {
-    alert('No valid rows found in CSV data. Check console.');
-    return;
-  }
-
-  createOrUpdateChart(labels, dataPoints);
+  // Mostra tabella
+  renderTable(parsedRows, fields);
+  // Popola select
+  populateColumnSelectors(fields);
 }
 
 /****************************************************************************
- * 3. Create or Update Chart
+ * 2) Render Table Preview
  ****************************************************************************/
-function createOrUpdateChart(labels, dataPoints) {
-  // Destroy existing chart if any
+function renderTable(data, fields) {
+  tablePreview.innerHTML = '';
+  const table = document.createElement('table');
+
+  // Thead
+  const thead = document.createElement('thead');
+  const headerRow = document.createElement('tr');
+  fields.forEach(f => {
+    const th = document.createElement('th');
+    th.textContent = f;
+    headerRow.appendChild(th);
+  });
+  thead.appendChild(headerRow);
+
+  // Tbody
+  const tbody = document.createElement('tbody');
+
+  // Se data è array di oggetti
+  if (typeof data[0] === 'object' && !Array.isArray(data[0])) {
+    data.forEach(rowObj => {
+      const tr = document.createElement('tr');
+      fields.forEach(f => {
+        const td = document.createElement('td');
+        td.textContent = rowObj[f];
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+  } else {
+    // data è array di array
+    data.forEach(rowArray => {
+      const tr = document.createElement('tr');
+      rowArray.forEach(cell => {
+        const td = document.createElement('td');
+        td.textContent = cell;
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+  }
+
+  table.appendChild(thead);
+  table.appendChild(tbody);
+  tablePreview.appendChild(table);
+}
+
+/****************************************************************************
+ * 3) Populate column selectors (X axis, Y axis)
+ ****************************************************************************/
+function populateColumnSelectors(fields) {
+  xColumnSelect.innerHTML = '';
+  yColumnsSelect.innerHTML = '';
+
+  fields.forEach(f => {
+    const optX = document.createElement('option');
+    optX.value = f;
+    optX.textContent = f;
+    xColumnSelect.appendChild(optX);
+
+    const optY = document.createElement('option');
+    optY.value = f;
+    optY.textContent = f;
+    yColumnsSelect.appendChild(optY);
+  });
+}
+
+/****************************************************************************
+ * 4) Generate Chart
+ ****************************************************************************/
+generateChartBtn.addEventListener('click', () => {
+  if (!parsedRows || !fields.length) {
+    alert('Nessun dato disponibile. Fai prima il parsing!');
+    return;
+  }
+
+  const xCol = xColumnSelect.value;
+  const yCols = Array.from(yColumnsSelect.selectedOptions).map(o => o.value);
+  const chartType = chartTypeSelect.value;
+
+  // Costruiamo labels e datasets
+  let labels = [];
+  let datasets = [];
+
+  // Distinzione fra array di oggetti e array di array
+  if (typeof parsedRows[0] === 'object' && !Array.isArray(parsedRows[0])) {
+    // array di oggetti
+    labels = parsedRows.map(row => row[xCol]);
+    datasets = yCols.map(colName => {
+      const data = parsedRows.map(row => parseFloat(row[colName]));
+      return {
+        label: colName,
+        data,
+        backgroundColor: randomColor(),
+        borderColor: randomColor(),
+        borderWidth: 1
+      };
+    });
+  } else {
+    // array di array
+    // Trovare l'indice di xCol
+    const xIndex = fields.indexOf(xCol);
+    // Indici delle yCols
+    const yIndexes = yCols.map(colName => fields.indexOf(colName));
+
+    labels = parsedRows.map(rowArray => rowArray[xIndex]);
+    datasets = yIndexes.map((yIdx, i) => {
+      const colName = yCols[i];
+      const data = parsedRows.map(rowArray => parseFloat(rowArray[yIdx]));
+      return {
+        label: colName,
+        data,
+        backgroundColor: randomColor(),
+        borderColor: randomColor(),
+        borderWidth: 1
+      };
+    });
+  }
+
+  createOrUpdateChart(chartType, labels, datasets);
+});
+
+/****************************************************************************
+ * Create or Update Chart
+ ****************************************************************************/
+function createOrUpdateChart(chartType, labels, datasets) {
+  // distrugge eventuale chart esistente
   if (myChart) {
     myChart.destroy();
   }
-
   const ctx = document.getElementById('myChart').getContext('2d');
   myChart = new Chart(ctx, {
-    type: 'bar', // change to 'line', 'pie', etc. as needed
+    type: chartType,
     data: {
-      labels: labels,
-      datasets: [
-        {
-          label: 'Values',
-          data: dataPoints,
-          backgroundColor: 'rgba(54, 162, 235, 0.2)',
-          borderColor: 'rgba(54, 162, 235, 1)',
-          borderWidth: 1
-        }
-      ]
+      labels,
+      datasets
     },
     options: {
       responsive: true,
@@ -195,11 +269,11 @@ function createOrUpdateChart(labels, dataPoints) {
 }
 
 /****************************************************************************
- * 4. Download Chart
+ * 5) Download Chart
  ****************************************************************************/
 downloadChartBtn.addEventListener('click', () => {
   if (!myChart) {
-    alert('No chart to download!');
+    alert('Non c\'è alcun grafico da scaricare!');
     return;
   }
   const link = document.createElement('a');
@@ -207,3 +281,21 @@ downloadChartBtn.addEventListener('click', () => {
   link.href = myChart.toBase64Image();
   link.click();
 });
+
+/****************************************************************************
+ * Helpers
+ ****************************************************************************/
+function getFieldsFromJson(jsonArray) {
+  // Raccogli tutte le chiavi presenti nel primo (o in tutti) oggetto
+  // Opzionalmente potresti voler unire tutte le chiavi presenti in tutti gli oggetti
+  const firstObj = jsonArray[0];
+  return Object.keys(firstObj);
+}
+
+// Generatore di colori casuali in RGBA
+function randomColor() {
+  const r = Math.floor(Math.random() * 255);
+  const g = Math.floor(Math.random() * 255);
+  const b = Math.floor(Math.random() * 255);
+  return `rgba(${r}, ${g}, ${b}, 0.6)`;
+}

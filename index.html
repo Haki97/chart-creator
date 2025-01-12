@@ -1,9 +1,8 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="it">
 <head>
   <meta charset="UTF-8" />
-  <title>Chart Creator</title>
-  <!-- CSS -->
+  <title>Chart Creator (Advanced)</title>
   <link rel="stylesheet" href="style.css" />
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -13,37 +12,68 @@
 
 <body>
   <header>
-    <h1>Chart Creator</h1>
+    <h1>Chart Creator (Advanced)</h1>
   </header>
 
   <main>
+    <!-- 1) Input Data -->
     <section id="data-input">
-      <h2>Load or Paste Data</h2>
-      <p><strong>Supported:</strong> CSV or JSON (array of objects)</p>
-      
-      <!-- File Input -->
+      <h2>1) Carica/Paste Data (CSV o JSON)</h2>
       <input type="file" id="fileInput" accept=".csv, .json" />
-      
-      <!-- Textarea for manual data input -->
       <textarea
         id="manualData"
         placeholder="Paste CSV or JSON data here"
       ></textarea>
-
-      <!-- Checkbox to indicate if CSV has a header row -->
+      
+      <!-- Checkbox se c'è header o no -->
       <div>
         <input type="checkbox" id="hasHeader" />
-        <label for="hasHeader">CSV has header row (label, value, ...)</label>
+        <label for="hasHeader">CSV ha una riga di intestazione?</label>
       </div>
 
-      <!-- Render Chart Button -->
-      <button id="renderChartBtn">Generate Chart</button>
+      <!-- Button parse -->
+      <button id="parseDataBtn">Parse Data</button>
     </section>
 
+    <!-- 2) Anteprima tabella -->
+    <section id="table-container">
+      <h2>2) Anteprima dati in tabella</h2>
+      <div id="tablePreview">
+        <!-- Verrà creata dinamicamente -->
+      </div>
+    </section>
+
+    <!-- 3) Config grafico -->
+    <section id="chart-config">
+      <h2>3) Configura il grafico</h2>
+      <div class="config-row">
+        <label for="xColumnSelect">Colonna per etichette (X-axis):</label>
+        <select id="xColumnSelect"></select>
+      </div>
+
+      <div class="config-row">
+        <label for="yColumnsSelect">Colonne per i valori (Y-axis):</label>
+        <select id="yColumnsSelect" multiple></select>
+      </div>
+
+      <div class="config-row">
+        <label for="chartType">Tipo di grafico:</label>
+        <select id="chartType">
+          <option value="bar">Bar</option>
+          <option value="line">Line</option>
+          <option value="pie">Pie</option>
+          <option value="doughnut">Doughnut</option>
+        </select>
+      </div>
+
+      <button id="generateChartBtn">Genera Grafico</button>
+    </section>
+
+    <!-- 4) Visualizza chart -->
     <section id="chart-container">
-      <h2>Chart Preview</h2>
+      <h2>4) Anteprima Grafico</h2>
       <canvas id="myChart"></canvas>
-      <button id="downloadChartBtn">Download Chart</button>
+      <button id="downloadChartBtn">Scarica Grafico</button>
     </section>
   </main>
 
@@ -51,7 +81,7 @@
     <p>&copy; 2025 Chart Creator</p>
   </footer>
 
-  <!-- Main JS -->
+  <!-- Script principale -->
   <script src="app.js"></script>
 </body>
 </html>

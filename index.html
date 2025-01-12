@@ -1,38 +1,57 @@
 <!DOCTYPE html>
-<html lang="it">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Chart Creator</title>
-    <!-- Link al CSS -->
-    <link rel="stylesheet" href="style.css" />
-    <!-- Inclusione di Chart.js (CDN) -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  </head>
-  <body>
-    <header>
-      <h1>Chart Creator</h1>
-    </header>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Chart Creator</title>
+  <!-- CSS -->
+  <link rel="stylesheet" href="style.css" />
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- PapaParse for CSV parsing -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
+</head>
 
-    <main>
-      <section id="data-input">
-        <h2>Carica o inserisci dati</h2>
-        <input type="file" id="fileInput" accept=".csv, .json" />
-        <textarea id="manualData" placeholder="Incolla qui i dati in formato CSV o JSON"></textarea>
-        <button id="renderChartBtn">Genera Grafico</button>
-      </section>
+<body>
+  <header>
+    <h1>Chart Creator</h1>
+  </header>
 
-      <section id="chart-container">
-        <h2>Anteprima Grafico</h2>
-        <canvas id="myChart"></canvas>
-        <button id="downloadChartBtn">Scarica Grafico</button>
-      </section>
-    </main>
+  <main>
+    <section id="data-input">
+      <h2>Load or Paste Data</h2>
+      <p><strong>Supported:</strong> CSV or JSON (array of objects)</p>
+      
+      <!-- File Input -->
+      <input type="file" id="fileInput" accept=".csv, .json" />
+      
+      <!-- Textarea for manual data input -->
+      <textarea
+        id="manualData"
+        placeholder="Paste CSV or JSON data here"
+      ></textarea>
 
-    <footer>
-      <p>© 2025 Chart Creator</p>
-    </footer>
+      <!-- Checkbox to indicate if CSV has a header row -->
+      <div>
+        <input type="checkbox" id="hasHeader" />
+        <label for="hasHeader">CSV has header row (label, value, ...)</label>
+      </div>
 
-    <!-- Script principale -->
-    <script src="app.js"></script>
-  </body>
+      <!-- Render Chart Button -->
+      <button id="renderChartBtn">Generate Chart</button>
+    </section>
+
+    <section id="chart-container">
+      <h2>Chart Preview</h2>
+      <canvas id="myChart"></canvas>
+      <button id="downloadChartBtn">Download Chart</button>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 Chart Creator</p>
+  </footer>
+
+  <!-- Main JS -->
+  <script src="app.js"></script>
+</body>
 </html>

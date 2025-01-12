@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Chart Creator</title>
+    <!-- Link al CSS -->
+    <link rel="stylesheet" href="style.css" />
+    <!-- Inclusione di Chart.js (CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body>
+    <header>
+      <h1>Chart Creator</h1>
+    </header>
+
+    <main>
+      <section id="data-input">
+        <h2>Carica o inserisci dati</h2>
+        <input type="file" id="fileInput" accept=".csv, .json" />
+        <textarea id="manualData" placeholder="Incolla qui i dati in formato CSV o JSON"></textarea>
+        <button id="renderChartBtn">Genera Grafico</button>
+      </section>
+
+      <section id="chart-container">
+        <h2>Anteprima Grafico</h2>
+        <canvas id="myChart"></canvas>
+        <button id="downloadChartBtn">Scarica Grafico</button>
+      </section>
+    </main>
+
+    <footer>
+      <p>© 2025 Chart Creator</p>
+    </footer>
+
+    <!-- Script principale -->
+    <script src="app.js"></script>
+  </body>
+</html>
